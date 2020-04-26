@@ -1,5 +1,5 @@
-from mips_static import *
-from data_processing import *
+from optimization.mips_static import get_static_tour
+from gurobipy import *
 
 def get_times_for_static_extension(m):
     n = m._n

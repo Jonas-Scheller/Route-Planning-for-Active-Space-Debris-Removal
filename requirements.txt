@@ -3,3 +3,4 @@ numpy == 1.17.2
 pykep == 2.3
 scikit_learn == 0.21.3
 tqdm == 4.36.1
+sgp4 == 1.4

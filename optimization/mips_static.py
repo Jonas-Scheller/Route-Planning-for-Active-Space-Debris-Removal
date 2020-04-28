@@ -28,6 +28,27 @@ def get_static_tour(m):
 
     return res_edges
 
+def order_cycle_edges(edges):
+
+    res = [edges[0]]
+    current = edges[0]
+
+    edges_left = set(edges)
+    edges_left.remove(current)
+
+    while len(edges_left) > 0:
+
+        possible = [(i,j) for (i,j) in edges_left if i==current[1]]
+
+        if len(possible) != 1:
+            print("not a cycle")
+
+        current = possible[0]
+        res.append(current)
+        edges_left.remove(current)
+
+    return res
+
 def add_SEC_F1(m):
     x = m._xvars
     y = m._yvars

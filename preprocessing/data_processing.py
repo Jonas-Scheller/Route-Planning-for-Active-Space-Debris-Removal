@@ -244,6 +244,8 @@ def compute_static_TSP_data(SATCAT_PATH, TLE_PATH):
     res['A'] = A
     res['P'] = P
     res['ids'] = debris_ids
+    res['line1'] = [p.line1 for p in non_decayed]
+    res['line2'] = [p.line2 for p in non_decayed]
 
     return res
 

@@ -1,6 +1,10 @@
 # Route Planning for Active Space Debris Removal
 Algorithms for multi-rendezvous space trajectory optimization in the context of active space removal, based on a travelling salesman problem variant. The following algorithms were developed during a master thesis project, inspired by [a similar approach from ESA](https://esa.github.io/pygmo/examples/example7.html).
 
+<p align="center">
+<img src="https://github.com/Tshabalutzi/Route-Planning-for-Active-Space-Debris-Removal/blob/master/images/tour.png" width="60%" />
+</p>
+
 ## Usage guide
 Run `pip install -r requirements.txt` to install the requirements for the project. Furthermore, an installation and license of [gurobi](https://www.gurobi.com/) is required. Examples on how to use the code are given in the jupyter notebook *example.ipynb*.
 

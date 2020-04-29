@@ -126,7 +126,6 @@ def filter_non_decayed_dynamic(planets_inp, epochs):
         possible, i.e., decayed satellites """
     planets = planets_inp[:]
 
-    # ToDo
     blacklist = set([])
     nPlanets = len(list(planets))
     error = np.zeros((nPlanets, nPlanets))
@@ -254,7 +253,7 @@ def compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs):
     planets = pk.util.read_tle(TLE_PATH, with_name=True)
     satcat = pk.util.read_satcat(SATCAT_PATH)
 
-    # why does this work... ToDo this should be more reasonable
+    # filter out all planets, where sgp4 propagation fails
     non_decayed = filter_non_decayed_dynamic(planets, epochs)
     debris_ids = [p.name.strip() for p in non_decayed]
 
@@ -270,6 +269,7 @@ def compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs):
     return res
 
 def pickle_data(data, filename):
+    """ pickle data under filename """
     if not os.path.exists("processed"):
         os.makedirs("processed")
 
@@ -277,5 +277,6 @@ def pickle_data(data, filename):
         pickle.dump(data,f)
 
 def unpickle_data(filename):
+    """ unpickle data under filename """
     with open("processed/" + filename + ".p","rb") as f:
         return pickle.load(f)

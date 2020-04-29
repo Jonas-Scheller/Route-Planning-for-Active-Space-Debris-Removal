@@ -3,7 +3,7 @@ from itertools import combinations
 import numpy as np
 
 def get_static_tour(m):
-
+    """ Obtains the tour of solved gurobi model """
     res_edges = []
 
     x = m._xvars
@@ -29,7 +29,8 @@ def get_static_tour(m):
     return res_edges
 
 def order_cycle_edges(edges):
-
+    """ Orders the list of edges by their occurence in the cycle
+        [(0,3), (2,0), (3,2)] -> [(0,3), (3,2), (2,0)]"""
     res = [edges[0]]
     current = edges[0]
 
@@ -50,6 +51,7 @@ def order_cycle_edges(edges):
     return res
 
 def add_SEC_F1(m):
+    """ Adds first flow-based subtour elimination constraint """
     x = m._xvars
     y = m._yvars
     n = m._n
@@ -67,6 +69,7 @@ def add_SEC_F1(m):
         m.addConstr(sum(fl[i,j] for i in range(n) if i!=j) - sum(fl[j,k] for k in range(n) if j!=k) == y[j])
 
 def add_SEC_F3(m):
+    """ Adds third flow-based subtour elimination constraint """
     x = m._xvars
     y = m._yvars
     n = m._n
@@ -90,6 +93,7 @@ def add_SEC_F3(m):
                 m.addConstr(sum(fl[i,j,k] for i in range(n) if i!=j) - sum(fl[j,i,k] for i in range(n) if i!=j) == 0)
 
 def add_SEC_seq(m):
+    """ Adds sequence-based subtour elimination constraint """
     x = m._xvars
     y = m._yvars
     n = m._n
@@ -99,6 +103,7 @@ def add_SEC_seq(m):
     m.addConstrs(u[i] - u[j] + n * x[i,j] <= n-1 + M * (1 - y[i]) + M * (1 - y[j]) for (i,j) in edges_wo_earth)
 
 def add_SEC_T1(m):
+    """ Adds first time-based subtour elimination constraint """
     x = m._xvars
     y = m._yvars
     n = m._n
@@ -119,6 +124,7 @@ def add_SEC_T1(m):
     u = m.addVars(edges, vtype=GRB.CONTINUOUS, name='fl_')
 
 def add_SEC_T2(m):
+    """ Adds second time-based subtour elimination constraint """
     x = m._xvars
     y = m._yvars
     n = m._n
@@ -159,7 +165,8 @@ def add_SEC_to_model(m, SEC_TYPE):
 
 
 def TSP_static(A, P, budget, SEC_TYPE = "F1"):
-
+    """ Computes a solution for a static city selection TSP with subtour elimination
+        constraint SEC_TYPE """
     n = A.shape[0]
     m = Model()
 

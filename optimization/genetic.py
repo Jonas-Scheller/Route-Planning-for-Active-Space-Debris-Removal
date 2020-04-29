@@ -305,17 +305,20 @@ class GA:
         return final_pop[0]
 
 
-    def plot(self):
+    def plot(self, requested = []):
+
+        to_be_plotted = requested
+        if requested == []:
+            to_be_plotted = list(self.stats)
+
         for k in self.stats:
-
-            print(k)
-
-            plt.title(k)
-            plt.plot(range(self.params['nIterations']), self.stats[k]['ev_fitness'])
-            plt.xlabel("Evolution steps")
-            plt.ylabel("Fitness")
-            plt.tight_layout()
-            plt.show()
+            if k in to_be_plotted:
+                plt.title(k)
+                plt.plot(range(self.params['nIterations']), self.stats[k]['ev_fitness'])
+                plt.xlabel("Evolution steps")
+                plt.ylabel("Fitness")
+                plt.tight_layout()
+                plt.show()
 
         return 0
 

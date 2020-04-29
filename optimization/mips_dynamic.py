@@ -2,6 +2,7 @@ from optimization.mips_static import get_static_tour
 from gurobipy import *
 
 def get_times_for_static_extension(m):
+    """ Returns times of transfer for SEC from static variant """
     n = m._n
     y = m._yvars
     t = m._tvars
@@ -21,7 +22,7 @@ def get_times_for_static_extension(m):
     return res_times
 
 def get_times_DF(m):
-
+    """ Returns times of transfer for SEC for flow-based SECs """
     n = m._n
     x = m._yvars
     fl = m._flvars
@@ -39,7 +40,7 @@ def get_times_DF(m):
         print('Not finished / no solution')
 
 def order_cycle_edges(edges):
-
+    """ Returns times of transfer for SEC for flow-based SECs """
     res = [edges[0]]
     current = edges[0]
 
@@ -60,7 +61,7 @@ def order_cycle_edges(edges):
     return res
 
 def get_times_DT1(m):
-
+    """ Returns edges and times of transfer for SEC for time-based SEC """
     res_edge_times = []
 
     all_cost = 0
@@ -96,7 +97,7 @@ def compute_budget_dynamic(A, edge_times):
     return sum(A[i,j,int(t)] for (i,j,t) in edge_times)
 
 def TSP_dynamic_add_to_static(A, P, budget, transfer_duration, function_params, SEC_TYPE = "F1"):
-
+    """ Add dynamic problem extension to static problem formulation """
     times = list(range(A.shape[2]))
 
     n = A.shape[0]
@@ -149,7 +150,7 @@ def TSP_dynamic_add_to_static(A, P, budget, transfer_duration, function_params, 
     return m
 
 def TSP_DT1(A, P, budget, transfer_duration):
-
+    """ Time-based SEC formulation """
     n = A.shape[0]
     m = Model()
 
@@ -190,6 +191,7 @@ def TSP_DT1(A, P, budget, transfer_duration):
     return m
 
 def TSP_DF1(A, P, budget):
+    """ First flow-based SEC formulation """
 
     n = A.shape[0]
     m = Model()
@@ -249,6 +251,7 @@ def TSP_DF1(A, P, budget):
     return m
 
 def TSP_DF2(A, P, budget, function_params):
+    """ Second flow-based SEC formulation """
 
     n = A.shape[0]
     m = Model()
@@ -294,6 +297,8 @@ def TSP_DF2(A, P, budget, function_params):
     return m
 
 def TSP_dynamic(A, P, budget, transfer_duration=1, SEC_TYPE="DT1", regr_params=[]):
+    """ Computes a solution for a dynamic city selection TSP with subtour elimination
+        constraint SEC_TYPE """
     if SEC_TYPE == "DT1":
         return TSP_DT1(A, P, budget, transfer_duration)
 

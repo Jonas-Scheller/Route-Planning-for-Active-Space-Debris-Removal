@@ -268,6 +268,15 @@ def compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs):
 
     return res
 
+def compute_closeness(A, R):
+    """ Computes the closeness matrix C for a given weight matrix
+        and a closeness threshold R """
+    C = np.zeros(A.shape)
+    C[0,0] = 1
+    C[1:,1:] = np.array(A <= R)[1:,1:]
+
+    return C
+
 def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
     """
     Computes a static TSP instance

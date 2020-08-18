@@ -287,7 +287,11 @@ def TSP_static_lazy(A, P, budget):
     return m
 
 def cov_TSP_no_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*60):
-
+    """
+    Computes a solution for the covering traveling salesman problem with
+    closeness matrix C without considering the deltaV from the covered
+    nodes
+    """
     n = A.shape[0]
     m = Model()
 
@@ -297,10 +301,6 @@ def cov_TSP_no_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*
     x = m.addVars(edges, vtype=GRB.BINARY, name='x_')
     y = m.addVars(range(n), vtype=GRB.BINARY, name='y_')
     z = m.addVars(range(n), vtype=GRB.BINARY, name='z_')
-
-    profit = {}
-    for i, yy in enumerate(y):
-        profit[yy] = P[i]
 
     m.update()
 
@@ -312,7 +312,7 @@ def cov_TSP_no_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*
     m.addConstr(sum(x[i,j] * A[i,j] for (i,j) in edges) <= budget)
 
     # maximize profit
-    m.setObjective(sum(profit[i] * z[i] for i in range(n)), GRB.MAXIMIZE)
+    m.setObjective(sum(P[i] * z[i] for i in range(n)), GRB.MAXIMIZE)
 
     m._xvars = x
     m._yvars = y
@@ -332,4 +332,46 @@ def cov_TSP_no_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*
     return m
 
 def cov_TSP_with_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*60):
-    raise NotImplementedError("Cov-TSP with covering cost has not been implemented yet")
+    """
+    Computes a solution for the covering traveling salesman problem with
+    closeness matrix C taking into account the deltaV for the covered
+    nodes
+    """
+    n = A.shape[0]
+    m = Model()
+
+    edges = [(i,j) for i in range(n) for j in range(n) if i!=j]
+    all_pairs = [(i,j) for i in range(n) for j in range(n)]
+
+    # variables
+    x = m.addVars(edges, vtype=GRB.BINARY, name='x_')
+    y = m.addVars(range(n), vtype=GRB.BINARY, name='y_')
+    z = m.addVars(all_pairs, vtype=GRB.BINARY, name='z_')
+
+    m.update()
+
+    # maximize profit
+    m.setObjective(sum(P[i] * sum(z[k,i] for k in range(n) if C[k,i] == 1) for i in range(n)), GRB.MAXIMIZE)
+
+    # incoming and outcoming edge
+    m.addConstrs(x.sum(i,'*') == y[i] for i in range(n))
+    m.addConstrs(x.sum('*',i) == y[i] for i in range(n))
+
+    # edge costs static
+    m.addConstr(sum(x[i,j] * A[i,j] for (i,j) in edges) <= budget - sum(A[i,j] * z[i,j] for (i,j) in edges if C[i,j]==1))
+    m.addConstrs(sum(z[k,i] for k in range(n) if C[k,i] == 1) <= 1 for i in range(n))
+
+    m._xvars = x
+    m._yvars = y
+    m._n = n
+    m._edges = edges
+
+    add_SEC_to_model(m, SEC_TYPE)
+
+    m.addConstrs(sum(C[i,j] * y[i] for i in range(n)) >= z[k,j] for j in range(n) for k in range(n) if C[k,j] == 1)
+
+    m.setParam('TimeLimit', TIMELIMIT)
+
+    # SEC
+    m.update()
+    m.optimize()

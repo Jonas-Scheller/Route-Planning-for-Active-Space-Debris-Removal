@@ -83,13 +83,13 @@ def add_leading_zero_dynamic(A, P, params):
 
     A_new = np.zeros((A.shape[0] + 1, A.shape[1] + 1, A.shape[2]))
     P_new = np.zeros(P.shape[0] + 1)
-    params_new = np.zeros((A.shape[0] + 1, A.shape[1] + 1, params.shape[2]))
+    params_new = np.zeros((params.shape[0] + 1, params.shape[1] + 1, params.shape[2]))
 
     A_new[1:, 1:, :] = A
     P_new[1:] = P
     params_new[1:, 1:, :] = params
 
-    return A_new, P_new, params
+    return A_new, P_new, params_new
 
 def get_radarArea(planets, satcat):
     """ returns radarA area of planets as in satcat catalogue """
@@ -267,6 +267,55 @@ def compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs):
     res['ids'] = debris_ids
 
     return res
+
+def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
+
+    planets = pk.util.read_tle(TLE_PATH, with_name=True)
+    satcat = pk.util.read_satcat(SATCAT_PATH)
+
+    non_decayed = filter_non_decayed_static(planets)
+    debris_ids = [p.name.strip() for p in non_decayed]
+
+    A = compute_A_static_three_impulse(non_decayed)
+    P = compute_P_radar(debris_ids, satcat)
+
+    n = nMaxNodes
+    if nMaxNodes == -1:
+        n = A.shape[0]
+
+    sorted_ind = np.argsort(P).reshape(-1)[::-1]
+    A = A[sorted_ind,:][:,sorted_ind]
+    P = P[sorted_ind]
+
+    A,P = add_leading_zero_static(A,P)
+
+    return A, P
+
+def compute_dynamic_TSP_instance(SATCAT_PATH, TLE_PATH, startDay, nEpochs, step_size = 7, nMaxNodes = -1, withRegression = False):
+
+    epochs = compute_epochs(startDay, nEpochs, step_size)
+    dynamic_data = compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs)
+
+    A_raw, P_raw = dynamic_data['A'], dynamic_data['P']
+
+    par_raw = np.zeros((A_raw.shape[0], A_raw.shape[1], 2))
+    if withRegression:
+        par_raw = compute_regression_for_matrix(A_raw)
+
+    A, P, par = add_leading_zero_dynamic(A_raw, P_raw, par_raw)
+
+    n = nMaxNodes
+    if nMaxNodes == -1:
+        n = A.shape[0]
+
+    # sort by priority
+    sorted_ind = np.argsort(P).reshape(-1)[::-1]
+    A = A[sorted_ind,:,:][:,sorted_ind,:]
+    P = P[sorted_ind]
+    par = par[sorted_ind,:,:][:,sorted_ind,:]
+
+    return A[:n,:n,:], P[:n], par[:n,:n,:]
+
 
 def pickle_data(data, filename):
     """ pickle data under filename """

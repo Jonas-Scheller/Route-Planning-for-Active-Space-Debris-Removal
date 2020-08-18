@@ -1,6 +1,51 @@
 from gurobipy import *
-from itertools import combinations
 import numpy as np
+import time
+from gurobipy import *
+from itertools import chain, combinations
+
+# Add SEC for conventional formulation in a lazy way
+def subtourelim(model, where):
+    if where == GRB.Callback.MIPSOL:
+        # make a list of edges selected in the solution
+        node_vals = model.cbGetSolution(model._yvars)
+        edge_vals = model.cbGetSolution(model._xvars)
+
+        nodes_selected = tuplelist(i for i in node_vals if node_vals[i] > 0.5)
+        edges_selected = tuplelist((i,j) for (i,j) in edge_vals if edge_vals[i,j] > 0.5)
+
+        # find the shortest cycle in the selected edge list
+        tour = subtour(nodes_selected, edges_selected, len(node_vals))
+
+        if len(tour) < len(nodes_selected):
+            expr = 0
+            for i in range(len(tour)):
+                for j in range(i+1, len(tour)):
+                    expr += model._xvars[tour[i], tour[j]]
+
+            expr += model._xvars[tour[len(tour)-1], tour[0]]
+            # add subtour elimination constraint for every pair of cities in tour
+            model.cbLazy(expr <= len(tour)-1)
+            model.update();
+
+# find shortest subtour in a list of edges
+def subtour(nodes, edges, n):
+    unvisited = nodes[:]
+    cycle = range(n+1) # initial length has 1 more city
+
+    while unvisited: # true if list is non-empty
+        thiscycle = []
+        neighbors = unvisited
+
+        while neighbors:
+            current = neighbors[0]
+            thiscycle.append(current)
+            unvisited.remove(current)
+            neighbors = [j for i,j in edges.select(current,'*') if j in unvisited]
+
+        if 0 not in thiscycle and len(cycle) > len(thiscycle):
+            cycle = thiscycle
+    return cycle
 
 def get_static_tour(m):
     """ Obtains the tour of solved gurobi model """
@@ -200,3 +245,91 @@ def TSP_static(A, P, budget, SEC_TYPE = "F1"):
     m.optimize()
 
     return m
+
+def TSP_static_lazy(A, P, budget):
+    """ Computes a solution for a static city selection TSP with conventional
+        subtour elimination with lazy addition of constraints """
+
+    n = A.shape[0]
+    m = Model()
+
+    edges = [(i,j) for i in range(n) for j in range(n) if i!=j]
+
+    # variables
+    x = m.addVars(edges, vtype=GRB.BINARY, name='x_')
+    y = m.addVars(range(n), vtype=GRB.BINARY, name='y_')
+
+    m.update()
+
+    # incoming and outcoming edge
+    m.addConstrs(x.sum(i,'*') == y[i] for i in range(n))
+    m.addConstrs(x.sum('*',i) == y[i] for i in range(n))
+
+    # edge costs static
+    m.addConstr(sum(x[i,j] * A[i,j] for (i,j) in edges) <= budget)
+
+    # maximize profit
+    m.setObjective(sum(P[i] * y[i] for i in range(n)), GRB.MAXIMIZE)
+
+    m.Params.lazyConstraints = 1
+
+    m._xvars = x
+    m._yvars = y
+    m._n = n
+    m._edges = edges
+
+    m.update()
+
+    m.optimize(subtourelim)
+
+    res_edges = get_static_tour(m, edges, n)
+
+    return m
+
+def cov_TSP_no_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*60):
+
+    n = A.shape[0]
+    m = Model()
+
+    edges = [(i,j) for i in range(n) for j in range(n) if i!=j]
+
+    # variables
+    x = m.addVars(edges, vtype=GRB.BINARY, name='x_')
+    y = m.addVars(range(n), vtype=GRB.BINARY, name='y_')
+    z = m.addVars(range(n), vtype=GRB.BINARY, name='z_')
+
+    profit = {}
+    for i, yy in enumerate(y):
+        profit[yy] = P[i]
+
+    m.update()
+
+    # incoming and outcoming edge
+    m.addConstrs(x.sum(i,'*') == y[i] for i in range(n))
+    m.addConstrs(x.sum('*',i) == y[i] for i in range(n))
+
+    # edge costs static
+    m.addConstr(sum(x[i,j] * A[i,j] for (i,j) in edges) <= budget)
+
+    # maximize profit
+    m.setObjective(sum(profit[i] * z[i] for i in range(n)), GRB.MAXIMIZE)
+
+    m._xvars = x
+    m._yvars = y
+    m._n = n
+    m._edges = edges
+
+    add_SEC_to_model(m, SEC_TYPE)
+
+    m.addConstrs(sum(C[i,j] * y[i] for i in range(n)) >= z[j] for j in range(n))
+
+    m.setParam('TimeLimit', TIMELIMIT)
+
+    # SEC
+    m.update()
+    m.optimize()
+
+    return m
+
+def cov_TSP_with_covering_cost(A, P, C, budget, SEC_TYPE = "F1", TIMELIMIT = 3*60*60):
+    raise NotImplementedError("Cov-TSP with covering cost has not been implemented yet")

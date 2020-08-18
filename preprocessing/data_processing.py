@@ -269,6 +269,14 @@ def compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs):
     return res
 
 def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
+    """
+    Computes a static TSP instance
+
+    Keyword arguments:
+    SATCAT_PATH    -- path to SATCAT file
+    TLE_PATH       -- path to TLE file
+    nMaxNodes      -- max number of nodes in tsp instance
+    """
 
     planets = pk.util.read_tle(TLE_PATH, with_name=True)
     satcat = pk.util.read_satcat(SATCAT_PATH)
@@ -292,7 +300,18 @@ def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
     return A, P
 
 def compute_dynamic_TSP_instance(SATCAT_PATH, TLE_PATH, startDay, nEpochs, step_size = 7, nMaxNodes = -1, withRegression = False):
+    """
+    Computes a dynamic TSP instance
 
+    Keyword arguments:
+    SATCAT_PATH    -- path to SATCAT file
+    TLE_PATH       -- path to TLE file
+    startDay       -- start date of cost computation as julian day (mjd2000)
+    nEpochs        -- total number of epochs in which a transfer is possible
+    ste_size       -- time between each two successive epochs
+    nMaxNodes      -- max number of nodes in tsp instance
+    withRegression -- if set to true, will compute regression parameters
+    """
     epochs = compute_epochs(startDay, nEpochs, step_size)
     dynamic_data = compute_dynamic_TSP_data(SATCAT_PATH, TLE_PATH, epochs)
 

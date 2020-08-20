@@ -207,6 +207,7 @@ def add_SEC_to_model(m, SEC_TYPE):
 
     else:
         print("unsupported SEC type " + str(SEC_TYPE))
+        raise NotImplementedError
 
 
 def TSP_static(A, P, budget, SEC_TYPE = "F1"):

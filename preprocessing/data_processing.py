@@ -284,7 +284,7 @@ def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
     Keyword arguments:
     SATCAT_PATH    -- path to SATCAT file
     TLE_PATH       -- path to TLE file
-    nMaxNodes      -- max number of nodes in tsp instance
+    nMaxNodes      -- max number of debris objects in tsp instance
     """
 
     planets = pk.util.read_tle(TLE_PATH, with_name=True)
@@ -304,6 +304,10 @@ def compute_static_TSP_instance(SATCAT_PATH, TLE_PATH, nMaxNodes = -1):
     A = A[sorted_ind,:][:,sorted_ind]
     P = P[sorted_ind]
 
+    # reduce size
+    A = A[:n,:n]
+    P = P[:n]
+
     A,P = add_leading_zero_static(A,P)
 
     return A, P
@@ -318,7 +322,7 @@ def compute_dynamic_TSP_instance(SATCAT_PATH, TLE_PATH, startDay, nEpochs, step_
     startDay       -- start date of cost computation as julian day (mjd2000)
     nEpochs        -- total number of epochs in which a transfer is possible
     ste_size       -- time between each two successive epochs
-    nMaxNodes      -- max number of nodes in tsp instance
+    nMaxNodes      -- max number of debris objects in tsp instance
     withRegression -- if set to true, will compute regression parameters
     """
     epochs = compute_epochs(startDay, nEpochs, step_size)
@@ -330,19 +334,23 @@ def compute_dynamic_TSP_instance(SATCAT_PATH, TLE_PATH, startDay, nEpochs, step_
     if withRegression:
         par_raw = compute_regression_for_matrix(A_raw)
 
-    A, P, par = add_leading_zero_dynamic(A_raw, P_raw, par_raw)
+    # sort by priority
+    sorted_ind = np.argsort(P_raw).reshape(-1)[::-1]
+    A = A_raw[sorted_ind,:,:][:,sorted_ind,:]
+    P = P_raw[sorted_ind]
+    par = par_raw[sorted_ind,:,:][:,sorted_ind,:]
 
     n = nMaxNodes
     if nMaxNodes == -1:
         n = A.shape[0]
 
-    # sort by priority
-    sorted_ind = np.argsort(P).reshape(-1)[::-1]
-    A = A[sorted_ind,:,:][:,sorted_ind,:]
-    P = P[sorted_ind]
-    par = par[sorted_ind,:,:][:,sorted_ind,:]
+    A = A[:n, :n, :]
+    P = P[:n]
+    par = par[:n,:n,:]
 
-    return A[:n,:n,:], P[:n], par[:n,:n,:]
+    A, P, par = add_leading_zero_dynamic(A, P, par)
+
+    return A, P, par
 
 
 def pickle_data(data, filename):

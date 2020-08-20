@@ -282,7 +282,7 @@ def TSP_static_lazy(A, P, budget):
 
     m.optimize(subtourelim)
 
-    res_edges = get_static_tour(m, edges, n)
+    res_edges = get_static_tour(m)
 
     return m
 
